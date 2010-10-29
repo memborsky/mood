@@ -2,8 +2,8 @@
 ## Author: Jankly
 ## Title: mood
 ## Version: 0.1
-## SavedVariables: currentMood
-## SavedVariablesPerCharacter: outputMethods, outputStrings
+## SavedVariables: moodG
+## SavedVariablesPerCharacter: moodP
 ## X-Website: http://github.com/jankly/mood
 ## X-Category: Mood
 ## X-mood: mood
