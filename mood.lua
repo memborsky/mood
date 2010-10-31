@@ -3,6 +3,9 @@ local parent, mood = ...
 local _VERSION = GetAddOnMetadata(parent, 'version')
 _G["mood"] = mood
 
+-- used for developer debugging purposes
+local debug = true
+
 -- Local variables
 local dummy = function() end
 local newChar = false
@@ -28,12 +31,23 @@ local frames = {
 	['main'] = {
 		['frame'] = nil,
 		['buttons'] = {},
+		['checkbutton'] = {},
 	}
 }
 
+-- debugging addon
+if debug then mood.frames = frames end
+
 -- Used to streamline frame creations
 local FrameFactory = function(name, x, y, width, height, point, rpoint, anchor, parent, inherit, strata, mouse)
-	local panel = CreateFrame("Frame", name, parent, inherit)
+	local panel
+
+	if inherit ~= nil then
+		panel = CreateFrame("Frame", name, parent, inherit)
+	else
+		panel = CreateFrame("Frame", name, parent)
+	end
+
 	panel:EnableMouse(mouse)
 	panel:SetFrameStrata(strata)
 	panel:SetWidth(width)
@@ -99,11 +113,13 @@ end
 -- Handle the button clicking --
 --------------------------------
 local buttonOnClick = function(self, button, mood)
-	for _, method in pairs(moodG.methods) do
-		local checked = moodP['settings']['methods'][method]['checked']
-		local names = moodP['settings']['methods'][method]['names']
-		if checked then
-			handleOutput(method, mood, names)
+	if not moodP.settings.methods.silent then
+		for _, method in pairs(moodG.methods) do
+			local checked = moodP['settings']['methods'][method]['checked']
+			local names = moodP['settings']['methods'][method]['names']
+			if checked then
+				handleOutput(method, mood, names)
+			end
 		end
 	end
 
@@ -114,8 +130,103 @@ local buttonOnClick = function(self, button, mood)
 	frames.main.frame:Hide()
 end
 
--- global variables
-playerClass = select(2, UnitClass("player"))
+-----------------------------------
+-- Save the main frames position --
+-----------------------------------
+local saveMainFrame = function(self)
+	local point, _, rpoint, x, y = self:GetPoint()
+	moodP.frames.main.point = point
+	moodP.frames.main.rpoint = rpoint
+	moodP.frames.main.x = x
+	moodP.frames.main.y = y
+end
+
+----------------------
+-- Build the frames --
+----------------------
+local buildFrames = function()
+	-- Frame to hold the moood select options
+	-- We are doing this after the loader loads so that we can have saved data.
+	if not frames.main.frame or frames.main.frame == nil then
+
+		--local FrameFactory = function(name, x, y, width, height, point, rpoint, anchor, parent, inherit, strata, mouse)
+		local moodselect = FrameFactory(
+		"moodselect",
+		moodP.frames.main.x or 0,
+		moodP.frames.main.y or 0,
+		moodP.frames.main.width or 100,
+		(not moodP.frames.main.height or moodP.frames.main.height > 0) and moodP.frames.main.height or (25 + (29 * #(moodP.frames.buttons)) + 15),
+		moodP.frames.main.point or "CENTER",
+		moodP.frames.main.rpoint or "CENTER",
+		UIParent, UIParent, nil, "BACKGROUND", true)
+
+		-- Setup main frame to allow for movement and save it's position after done moving.
+		moodselect:SetMovable(true)
+		moodselect:RegisterForDrag("LeftButton")
+		moodselect:SetScript("OnDragStart", moodselect.StartMoving)
+		moodselect:SetScript("OnDragStop", function(self)
+			self:StopMovingOrSizing()
+			saveMainFrame(self)
+		end)
+
+		-- Allow the send silent checkbutton to be set from previous usage. (Also be cool and collect garbage for other bad coders)
+		moodselect:SetScript("OnShow", function() mood_CheckButton_Silent:SetChecked(moodP.settings.methods.silent); collectgarbage() end)
+
+		frames.main.frame = moodselect
+	end
+
+	-- Setup the buttons
+	if not frames.main.buttons or frames.main.buttons ~= {} then
+		local buttonPrev
+		for id, button in pairs(moodP.frames.buttons) do
+			local b = ButtonFactory("mood_Button_" .. button.name, button.name, frames.main.frame, frames.main.frame:GetWidth() - 10, 24, font, button.color)
+
+			b:ClearAllPoints()
+
+			if id == 1 then
+				b:SetPoint("TOP", frames.main.frame, "TOP", 0, -25)
+			else
+				b:SetPoint("TOPLEFT", buttonPrev, "BOTTOMLEFT", 0, -5)
+			end
+
+			b:SetScript("OnClick", function(self, bu) buttonOnClick(self, bu, button.name) end)
+
+			b.name = button.name
+
+			buttonPrev = b
+			frames['main']['buttons'][button.name] = b
+		end
+
+		-- Allow the user to select "Silent" checkbox to not output anything when asking for their mood.
+		if not frames.main.checkbutton or frames.main.checkbutton ~= {} then
+			local checkButton = CreateFrame("CheckButton", "mood_CheckButton_Silent", frames.main.frame)
+			checkButton:SetWidth(18)
+			checkButton:SetHeight(18)
+			checkButton:SetPoint("TOPLEFT", buttonPrev, "BOTTOMLEFT", 0, -1)
+			checkButton:SetFrameLevel(frames.main.frame:GetFrameLevel() + 1)
+
+			-- Save on clicking
+			checkButton:SetScript("OnClick", function(self) moodP.settings.methods.silent = self:GetChecked() end)
+
+			checkButton:SetHitRectInsets(0, -65, 0, 0)
+
+			checkButton:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+			checkButton:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
+			checkButton:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+			checkButton:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+
+			frames.main.checkbutton.button = checkbutton
+
+			local checkButtonText = checkButton:CreateFontString(nil, "OVERLAY")
+			checkButtonText:SetFont(font, 11)
+			checkButtonText:SetPoint("LEFT", checkButton, "RIGHT", 2, 0)
+			checkButtonText:SetText("Silent")
+			checkButtonText:Show()
+
+			frames.main.checkbutton.text = checkButtonText
+		end
+	end
+end
 
 -- OnEvent's to addon loading
 local loaderOnEvent = function(self, event, ...)
@@ -144,6 +255,7 @@ local loaderOnEvent = function(self, event, ...)
 			newChar = true
 
 			moodP = {
+				['mood'] = "Ok",
 				['settings'] = {
 					['methods'] = {
 						["WHISPER"] = {
@@ -170,15 +282,15 @@ local loaderOnEvent = function(self, event, ...)
 							['checked'] = false,
 						},
 					},
-					['mood'] = "Ok",
 				},
 				['frames'] = {
 					['main'] = {
-						[''] = "",
-						[''] = "",
-						[''] = "",
+						['point'] = "CENTER",
+						['rpoint'] = "CENTER",
 						['x'] = 100,
 						['y'] = 112,
+						['width'] = 100,
+						['height'] = 112,
 					},
 					['buttons'] = {
 						[1] = {
@@ -202,73 +314,27 @@ local loaderOnEvent = function(self, event, ...)
 		self:UnregisterEvent(event)
 		
 	elseif event == "PLAYER_ENTERING_WORLD" then
-		if not moodP.lastLogin then return end
-
-		-- Frame to hold the moood select options
-		-- We are doing this after the loader loads so that we can have saved data.
-		if not frames.main.frame or frames.main.frame ~= nil then
-			--local FrameFactory = function(name, x, y, width, height, point, rpoint, anchor, parent, inherit, strata, mouse)
-			local moodselect = FrameFactory(
-				"moodselect",
-				moodP.frames.main.x or 0,
-				moodP.frames.main.y or 0,
-				100, 112,
-				moodP.frames.main.point or "CENTER",
-				moodP.frames.main.rPoint or "CENTER",
-				UIParent, UIParent, "ButtonFrameTemplate", "BACKGROUND", true)
-
-			-- Setup main frame to allow for movement and save it's position after done moving.
-			moodselect:SetMovable(true)
-			moodselect:RegisterForDrag("LeftButton")
-			moodselect:SetScript("OnDragStart", moodselect.StartMoving)
-			moodselect:SetScript("OnDragStop", function(self)
-				self:StopMovingOrSizing()
-				point, _, rpoint, x, y = self:GetPoint()
-				moodP.frames.main.point = point
-				moodP.frames.main.rpoint = rpoint
-				moodP.frames.main.x = x
-				moodP.frames.main.y = y
-			end)
-
-			-- Close the frame on by pressing the right mouse button on the frame
-			--[[
-			moodselect:RegisterForClicks("RightMouseUp")
-			moodselect:SetScript("OnMouseUp", function(self, ...)
-				local arg1 = ...
-
-				if arg1 == "RightButton" then
-					self:Hide()
-				end
-			end)
-			--]]
-
-			frames.main.frame = moodselect
-		end
-
-		-- Setup the buttons
-		if not frames.main.buttons or frames.main.buttons ~= {} then
-			for id, button in pairs(moodP.frames.buttons) do
-				local b = ButtonFactory("mood_" .. button.name .. "Button", button.name, frames.main.frame, frames.main.frame:GetWidth() - 10, 24, font, button.color)
-
-				b:ClearAllPoints()
-
-				if id == 1 then
-					b:SetPoint("TOP", frames.main.frame, "TOP", 0, -25)
-				else
-					b:SetPoint("TOPLEFT", buttonPrev, "BOTTOMLEFT", 0, -5)
-				end
-
-				b:SetScript("OnClick", function(self, bu) buttonOnClick(self, bu, button.name) end)
-
-				buttonPrev = b
-				frames['main']['buttons'][button.name] = b
+		do
+			local weekday, month, day, year = CalendarGetDate()
+			if (moodP.lastLogin.weekday ~= weekday and
+			    moodP.lastLogin.month ~= month and
+			    moodP.lastLogin.day ~= day and
+			    moodP.lastLogin.year ~= year) then
+				moodP.lastLogin = {['weekday'] = weekday, ['month'] = month, ['day'] = day, ['year'] = year}
+				return
 			end
 		end
 
+		-- Build the frames out for usage.
+		buildFrames()
+
+
+		-- This is where we will load a basic frame with "Yes" or "No" to ask for a new mood if the
+		-- last login date is not today.
 		local weekday, month, day, year = CalendarGetDate()
 		if moodP.lastLogin ~= {weekday,month,day,year} then
 			local method = moodP.settings.method
-			local mood = moodP.settings.mood
+			local mood = moodP.mood
 			local string = moodG['strings'][method]
 		
 			if method == "WHISPER" or method == "CHANNEL" then 
@@ -282,7 +348,10 @@ local loaderOnEvent = function(self, event, ...)
 
 	elseif event == "PLAYER_LOGOUT" then
 		local weekday, month, day, year = CalendarGetDate()
-		moodP.lastLogin = string:join({weekday, month, day, year})
+		moodP.lastLogin = {['weekday'] = weekday, ['month'] = month, ['day'] = day, ['year'] = year}
+
+		SaveMainFrame(frames.main.frame)
+
 		moodP = sort(moodP)
 		moodG = sort(moodG)
 	end
