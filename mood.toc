@@ -2,11 +2,13 @@
 ## Author: Jankly
 ## Title: mood
 ## Version: 0.1
-## SavedVariables: moodG
-## SavedVariablesPerCharacter: moodP
+## SavedVariablesPerCharacter: moodDB
 ## X-Website: http://github.com/jankly/mood
 ## X-Category: Mood
 ## X-mood: mood
 ## Notes: Addon that allows the user to set their mood
 
 mood.lua
+moodSettings.lua
+moodFrames.lua
+moodOptions.lua
