@@ -2,106 +2,127 @@
 local parent, mood = ...
 _G["mood"] = mood
 
------------
--- Fonts --
------------
-mood.fonts = {
-  ["normal"] = [=[Interface\Addons\mood\media\neuropol x cd rg.ttf]=]
-}
-
 -----------------------------
 -- Handles loading of vars --
-  -----------------------------
+-----------------------------
 mood.LoadVars = function ()
-  -- Used for string output literals
-  local playerName = UnitName("player");
+	if not moodDB or moodDB == nil or moodDB == {} then
+		-- Load our variables
+		moodDB = {
+			-- Is the addon silenced?
+			["silenced"]	= false,
 
-  -- Used to initialize the last time we logged in to be today.
-  local weekday, month, day, year = CalendarGetDate();
+			-- Frame Factory settings
+			["frames"] = {
+				-- Our Main mood frame. This is the money maker!
+				["main"] = {
+					["position"] = {
+						["x"]		= 0,
+						["y"]		= 0,
+						["point"]	= "CENTER",
+						["refPoint"]	= "CENTER",
+					},
+					["height"]	= 130, -- (25 + (30 * #(moodDB.frames.main.buttons)) + 15)	
+					["width"]	= 100,
+					["buttons"]	= {
+						[1] = {
+							["name"]	= "Excellent",
+							["color"]	= {0, 1, 0, .4},
+						},
+						[2] = {
+							["name"]	= "Ok",
+							["color"]	= {1, 1, 0, .4},
+						},
+						[3] = {
+							["name"]	= "Terrible",
+							["color"]	= {1, 0, 0, .4},
+						},
+					},
+				}, -- ["main"] = {
 
-  -- Load our variables
-  mood.vars = {
-    -- Default variables
-      ["default"] = {
-        ["methods"] = {"WHISPER", "CHANNEL", "PARTY", "GUILD", "OFFICER", "EMOTE", "SELF"},
-        ["strings"] = {
-          ["GUILD"] = "I'm currently in a @mood@ mood.",
-          ["OFFICER"] = "I'm currently in a @mood@ mood.",
-          ["WHISPER"] = "I'm currently in a @mood@ mood.",
-          ["PARTY"] = "I'm currently in a @mood@ mood.",
-          ["CHANNEL"] = "I'm currently in a @mood@ mood.",
-          ["EMOTE"] = "is currently in a @mood@ mood.",
-          ["SELF"] = "Your mood is currently set to @mood@.",
-        },
-        ["buttons"] = {
-          [1] = {
-            ["name"] = "Excellent",
-            ["color"] = {0, 1, 0, .4},
-          },
-          [2] = {
-            ["name"] = "Ok",
-            ["color"] = {1, 1, 0, .4},
-          },
-          [3] = {
-            ["name"] = "Terrible",
-            ["color"] = {1, 0, 0, .4},
-          },
-        },
-      },
+				["font"] = {
+					["normal"]	= [=[Interface\Addons\mood\media\neuropol x cd rg.ttf]=],
+				},
+			}, -- ["frames"] = {
 
-    -- Our personal settings per character
-      ["personal"] = {
-        -- playerName just incase we name change.
-          ["playerName"] = moodDB.playerName == playerName and moodDB.playerName or playerName
+			["methods"] = {
+				["WHISPER"] = {
+					["checked"]	= false,
+					["names"]	= {},
+					["string"]	= "I'm currently in a @mood@ mood.",
+				},
+				["CHANNEL"] = {
+					["checked"]	= false,
+					["names"]	= {},
+					["string"]	= "I'm currently in a @mood@ mood.",
+				},
+				["PARTY"] = {
+					["checked"]	= false,
+					["names"]	= {},
+					["string"]	= "I'm currently in a @mood@ mood.",
+				},
+				["GUILD"] = {
+					["checked"]	= false,
+					["names"]	= {},
+					["string"]	= "I'm currently in a @mood@ mood.",
+				},
+				["OFFICER"] = {
+					["checked"]	= false,
+					["names"]	= {},
+					["string"]	= "I'm currently in a @mood@ mood.",
+				},
+				["EMOTE"] = {
+					["checked"]	= false,
+					["names"]	= {},
+					["string"]	= "is currently in a @mood@ mood.",
+				},
+				["SELF"] = {
+					["checked"]	= true,
+					["names"]	= {},
+					["string"]	= "Your mood is currently set to @mood@.",
+				},
+			}, -- ["methods"] = {
 
-          -- Output methods and their current settings
-          ["methods"] = {
-            ["WHISPER"] = moodDB.methods.WHISPER or false,
-            ["WHISPERNames"] = moodDB.methods.WHISPERNames or {playerName},
-            ["CHANNEL"] = moodDB.methods.CHANNEL or false,
-            ["CHANNELNames"] = moodDB.methods.CHANNELNames or {},
-            ["PARTY"] = moodDB.methods.PARTY or false,
-            ["GUILD"] = moodDB.methods.GUILD or false,
-            ["OFFICER"] = moodDB.methods.OFFICER or false,
-            ["EMOTE"] = moodDB.methods.EMOTE or false,
-            ["SELF"] = moodDB.methods.SELF or true, -- Only output method on initial addon configuration
-          },
+			["mood"] = nil, -- new character
 
-        ["frames"] = {
-          -- The button data for factory creation.
-            ["buttons"] = moodDB.frames.buttons or mood.vars.default.buttons,
+			["lastLogin"] = { -- Last time we logged in
+				["weekday"]		= 0,
+				["month"]		= 0,
+				["day"]			= 0,
+				["year"]		= 0,
+			}, -- ["lastLogin"] = {
 
-          -- The last location of our main frame and if we are set to silent output or not for relogs
-            ["main"] = {
-              ["x"] = moodDB.frames.main.x or 100,
-              ["y"] = moodDB.frames.main.y or (25 + (29 * #(moodDB.frames.buttons)) + 15),
-              ["point"] = moodDB.frames.main.point or "CENTER",
-              ["refPoint"] = moodDB.frames.main.refPoint or "CENTER",
-              ["silent"] = moodDB.frames.main.silent or false,
-            },
-        },
+		} -- moodDB = {
 
-        -- Our current mood (nil for new character)
-          ["mood"] = moodDB.mood or nil,
+	end -- if not moodDB or moodDB == {} then
+end
 
-        -- Our strings for output (Needs to eventually support locale strings and UTF8).
-          ["strings"] = moodDB.strings or mood.default.strings,
+local SaveDate = function()
+	local weekday, month, day, year = CalendarGetDate()
+	moodDB.lastLogin = {
+		["weekday"] = weekday,
+		["month"] = month,
+		["day"] = day,
+		["year"] = year,
+	}
+end
 
-        -- Last time we logged into the game on this character
-          ["lastLogin"] = {
-            ["weekday"] = moodDB.lastLogin.weekday or weekday,
-            ["month"] = moodDB.lastLogin.month or month,
-            ["day"] = moodDB.lastLogin.day or day,
-            ["year"] = moodDB.lastLogin.year or year,
-          },
+mood.LoggedToday = function()
+	local weekday, month, day, year = CalendarGetDate()
 
-      }, -- mood.vars.personal
+	local lastLog = moodDB.lastLogin
+	if (lastLog.weekday == weekday and
+		lastLog.month == month and
+		lastLog.day == day and
+		lastLog.year == year
+	) then
+		return true
+	end
 
-  }
-
+	return false
 end
 
 mood.SaveVars = function()
-  -- Saves our variables
-  mooDB = mood.vars.personal
-  end
+	-- Save our last login to now
+	SaveDate()
+end
