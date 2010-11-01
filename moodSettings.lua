@@ -97,7 +97,7 @@ mood.LoadVars = function ()
 	end -- if not moodDB or moodDB == {} then
 end
 
-local SaveDate = function()
+mood.SaveDate = function()
 	local weekday, month, day, year = CalendarGetDate()
 	moodDB.lastLogin = {
 		["weekday"] = weekday,
@@ -124,5 +124,5 @@ end
 
 mood.SaveVars = function()
 	-- Save our last login to now
-	SaveDate()
+	mood.SaveDate()
 end

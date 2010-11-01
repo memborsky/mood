@@ -14,6 +14,8 @@ local frames = {
 	},
 }
 
+mood.frames = frames
+
 local frameTables = {
 	["backdrop"] = {
 		["table"] = {
@@ -64,6 +66,21 @@ mood.CreateMood = function ()
 		------------------------
 		if method == "SELF" then
 			print("mood: " .. string)
+		elseif method ~= "WHISPER" or method ~= "CHANNEL" then
+			SendChatMessage(string, method)
+		elseif method == "WHISPER" then
+			for _, name in pairs(names) do
+				--if UnitIsConnected(name) then
+					SendChatMessage(string, method, nil, name)
+				--end
+			end
+		elseif method == "CHANNEL" then
+			for _, name in pairs(names) do
+				local id = GetChannelName(name)
+				if id ~= nil then
+					SendChatMessage(string, method, nil, id)
+				end
+			end
 		end
 	end
 
@@ -83,10 +100,13 @@ mood.CreateMood = function ()
 		end
 
 		-- Save our mood
-		moodDB.ood = mood
+		moodDB.mood = mood
 
-		-- Close mood frame
-		frames.main.frame:Hide()
+		-- Save our last login date just to be safe if we crash or change zones or basically pick our nose
+		--self.SaveDate()
+
+		-- Toggle the frame
+		ToggleFrame(frames.main.frame)
 	end
 
 
