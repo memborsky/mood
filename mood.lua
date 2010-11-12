@@ -48,9 +48,29 @@ mood:RegisterEvent("PLAYER_LOGOUT") -- Used to save our var off before we leave 
 mood:SetScript("OnEvent", OnEvent)
 
 -- Slash command
-SlashCmdList["MOOD"] = function() mood:ToggleMood() end
 SLASH_MOOD1 = "/mood"
+function SlashCmdList.mood(message)
+  message = strtrim(message or "")
 
+  if message == "" then
+    mood:ToggleFrame("mood")
+  elseif message == "options" then
+    print("Doing options window")
+  elseif message == "players" then
+    print("Doing mood players frame toggle")
+  elseif message == "debugon" then
+    moodDB.debug = true
+  elseif message == "debugoff" then
+    moodDB.debug = false
+  else
+    print("mood usage:")
+    print("/mood - toggle mood select frame")
+    print("/mood options - open to mood options pane")
+    print("/mood players - toggle mood players pane")
+  end
+end
+
+-- Jacked from haste's oUF for globalizing the mood namespace var
 if (global) then
   if (parent ~= 'mood' and global == 'mood') then
     error("%s is doing it wrong and settings its global to mood.", parent)
