@@ -5,7 +5,7 @@ _G["mood"] = mood
 -----------------------------
 -- Handles loading of vars --
 -----------------------------
-mood.LoadVars = function ()
+function mood:LoadVars (version)
 	if not moodDB or moodDB == nil or moodDB == {} then
 		-- Load our variables
 		moodDB = {
@@ -21,6 +21,7 @@ mood.LoadVars = function ()
 						["y"]		= 0,
 						["point"]	= "CENTER",
 						["refPoint"]	= "CENTER",
+            ["anchor"] = nil,
 					},
 					["height"]	= 130, -- (25 + (30 * #(moodDB.frames.main.buttons)) + 15)	
 					["width"]	= 100,
@@ -92,12 +93,14 @@ mood.LoadVars = function ()
 				["year"]		= 0,
 			}, -- ["lastLogin"] = {
 
+      ["version"] = version, -- Our addon's version
+
 		} -- moodDB = {
 
 	end -- if not moodDB or moodDB == {} then
 end
 
-mood.SaveDate = function()
+function mood:SaveDate ()
 	local weekday, month, day, year = CalendarGetDate()
 	moodDB.lastLogin = {
 		["weekday"] = weekday,
@@ -107,7 +110,7 @@ mood.SaveDate = function()
 	}
 end
 
-mood.LoggedToday = function()
+function mood:LoggedToday ()
 	local weekday, month, day, year = CalendarGetDate()
 
 	local lastLog = moodDB.lastLogin
@@ -122,7 +125,7 @@ mood.LoggedToday = function()
 	return false
 end
 
-mood.SaveVars = function()
+function mood:SaveVars ()
 	-- Save our last login to now
-	mood.SaveDate()
+	mood:SaveDate()
 end
