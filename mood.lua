@@ -3,7 +3,7 @@ local parent, ns = ...
 local global = GetAddOnMetadata(parent, 'X-mood')
 local _VERSION = GetAddOnMetadata(parent, 'version')
 
-local mood = {}
+local mood = CreateFrame"Frame"
 
 -- OnEvent's to addon loading
 local function OnEvent(self, event, ...)
@@ -16,28 +16,28 @@ local function OnEvent(self, event, ...)
 			mood:LoadVars(_VERSION)
 
 		end
-		
+
 	elseif event == "PLAYER_ENTERING_WORLD" then
 		-- Create the main mood selection frame
-		mood:CreateMood()
+		mood:CreateMoodFrames()
 
 		-- If we aren't on the same day, fire open the window to ask for the players mood today
 		if not mood:LoggedToday() then
-			mood:ToggleMood()
+			mood:ToggleFrame("mood")
 		end
 
 		-- Create the options interface frameage
 		--mood:CreateOptions()
 		--
 	elseif event == "PLAYER_LOGOUT" then
-	
+
 		-- Save them vars for next time
 		mood:SaveVars()
 
 	end
 
-  -- Unregister the event from the module.
-  self:UnregisterEvent(event);
+	-- Unregister the event from the module.
+	--self:UnregisterEvent(event);
 
 end
 
@@ -49,33 +49,35 @@ mood:SetScript("OnEvent", OnEvent)
 
 -- Slash command
 SLASH_MOOD1 = "/mood"
-function SlashCmdList.mood(message)
-  message = strtrim(message or "")
+function SlashCmdList.MOOD(message)
+	message = strtrim(message or "")
 
-  if message == "" then
-    mood:ToggleFrame("mood")
-  elseif message == "options" then
-    print("Doing options window")
-  elseif message == "players" then
-    print("Doing mood players frame toggle")
-  elseif message == "debugon" then
-    moodDB.debug = true
-  elseif message == "debugoff" then
-    moodDB.debug = false
-  else
-    print("mood usage:")
-    print("/mood - toggle mood select frame")
-    print("/mood options - open to mood options pane")
-    print("/mood players - toggle mood players pane")
-  end
+	if message == "" then
+		mood:ToggleFrame("mood")
+	elseif message == "options" then
+		print("Doing options window")
+	elseif message == "players" then
+		print("Doing mood players frame toggle")
+	elseif message == "debugon" then
+		print("Turning mood debugging on.")
+		moodDB.debug = true
+	elseif message == "debugoff" then
+		print("Turning mood debugging off.")
+		moodDB.debug = false
+	else
+		print("mood usage:")
+		print("/mood - toggle mood select frame")
+		print("/mood options - open to mood options pane")
+		print("/mood players - toggle mood players pane")
+	end
 end
 
 -- Jacked from haste's oUF for globalizing the mood namespace var
 if (global) then
-  if (parent ~= 'mood' and global == 'mood') then
-    error("%s is doing it wrong and settings its global to mood.", parent)
-  else
-    _G[parent] = mood
-  end
+	if (parent ~= 'mood' and global == 'mood') then
+		error("%s is doing it wrong and settings its global to mood.", parent)
+	else
+		_G[parent] = mood
+	end
 end
 ns.mood = mood

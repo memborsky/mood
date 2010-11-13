@@ -1,6 +1,7 @@
 -- Setup mood as a global and grab a copy of the version # set in the .toc
-local parent, mood = ...
-_G["mood"] = mood
+local parent, ns = ...
+
+local mood = ns.mood
 
 -----------------------------
 -- Handles loading of vars --
