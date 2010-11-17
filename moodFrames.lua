@@ -147,7 +147,7 @@ function mood:CreateMoodFrames ()
 	----------------------------
 	-- OnClick (mood buttons) --
 	----------------------------
-	local OnClick = function(self, button, mood)
+	local OnClick = function(self, button, currentMood)
 
 		for method, data in pairs(moodDB.methods) do
 
@@ -155,15 +155,15 @@ function mood:CreateMoodFrames ()
 			local names = data.names
 
 			if checked then
-				OutputMood(method, mood, names)
+				OutputMood(method, currentMood, names)
 			end
 		end
 
 		-- Save our mood
-		moodDB.mood = mood
+		moodDB.mood = currentMood
 
 		-- Save our last login date just to be safe if we crash or change zones or basically pick our nose
-		--mood:SaveDate()
+		mood:SaveDate()
 
 		-- Toggle the frame
 		ToggleFrame(frames.main.frame)
